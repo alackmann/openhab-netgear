@@ -1,4 +1,27 @@
 {
+  "name": "openhab-netgear",
+  "version": "0.9",
+  "description": "Control your Netgear Wifi router (Nighthawk and others) from home automation system OpenHAB",
+  "main": "manageWifi.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://bitbucket.org/alackmann/openhab-netgear.git"
+  },
+  "keywords": [
+    "netgear",
+    "router",
+    "openhab",
+    "homeautomation"
+  ],
+  "author": "Andre Lackmann",
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://bitbucket.org/alackmann/openhab-netgear/issues"
+  },
+  "homepage": "https://bitbucket.org/alackmann/openhab-netgear/src/master/README.md",
   "dependencies": {
     "netgear": "^2.3.0"
   }
