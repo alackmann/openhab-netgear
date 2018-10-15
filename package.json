@@ -1,6 +1,6 @@
 {
   "name": "openhab-netgear",
-  "version": "0.9",
+  "version": "0.9.0",
   "description": "Control your Netgear Wifi router (Nighthawk and others) from home automation system OpenHAB",
   "main": "manageWifi.js",
   "scripts": {
