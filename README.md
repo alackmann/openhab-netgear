@@ -15,7 +15,7 @@ The provided examples allow you to create an interface to easily turn on/off the
 1. Go to your OpenHAB scripts directory (on Linux this is `/etc/openhab2/scripts`)
 1. Install this package using yarn/npm: `yarn add openhab-netgear`
 1. You should now have a folder in your scripts dir for `openhab-netgear`
-1. Depending on your setup, you probably need to change the file ownership of the new folder `chown -R openhab: openhab-netgear`
+1. Depending on your setup, you probably need to change the file ownership of the new folder `chown -R openhab: node_modules/`
 
 ## Setup
 ### Things
@@ -23,8 +23,8 @@ You need to setup two *Things* in OpenHAB to connect the node script to OpenHAB.
 
 | Thing           | Command                                                                          | Transform   | Interval | Timeout | Autorun |
 | ----------------|----------------------------------------------------------------------------------|-------------|----------|---------|---------|
-| wifiGuestSwitch | /usr/bin/node /etc/openhab2/scripts/openhab-netgear/manageWifi.js switch-2g %2$s | REGEX((.*)) | 0        | 15      | OFF     |
-| wifiStatus      | /usr/bin/node /etc/openhab2/scripts/openhab-netgear/manageWifi.js guest-status   | REGEX((.*)) | 60       | 15      | OFF     |
+| wifiGuestSwitch | /usr/bin/node /etc/openhab2/scripts/node_modules/openhab-netgear/manageWifi.js switch-2g %2$s | REGEX((.*)) | 0        | 15      | OFF     |
+| wifiStatus      | /usr/bin/node /etc/openhab2/scripts/node_modules/openhab-netgear/manageWifi.js guest-status   | REGEX((.*)) | 60       | 15      | OFF     |
 
 You can do this via the web interface OR in the file system - however you normally do this should be fine.
 
@@ -54,7 +54,7 @@ Example Sitemap entries to allow guest wifi to be controlled and managed. Add th
 ```
 
 ### Rules
-Copy the `wifi.rules` file from `/etc/openhab2/scripts/openhab-netgear/wifi.rules` into your rules folder (`/etc/openhab2/rules/`). Edit as you see fit.
+Copy the `wifi.rules` file from `/etc/openhab2/scripts/node_modules/openhab-netgear/wifi.rules` into your rules folder (`/etc/openhab2/rules/`). Edit as you see fit.
 
 ## Troubleshooting
 To confirm the script is installed with all the pre-requisites, from the command line of your OpenHAB server, run the following:
