@@ -1,0 +1,127 @@
+/**
+    Turn on/off the guest wifi via an Exec Item Binding
+    Will ignore the request if the switch is already in the requested state
+    This is to avoid a wifi interruption when they are not necessary (even modifying guest network interrupts main)
+ */
+rule "Switch Guest Wifi On/Off"
+when
+	Item WifiGuestSwitch received command
+then
+    logInfo('wifi','Wifi Switch previous state: ' + WifiGuestSwitch.previousState(false,"jdbc").state)
+    // set the arguments
+    WifiGuestSwitchArgs.sendCommand(receivedCommand.toString)
+	// Switch the wifi
+    WifiGuestSwitchExec.sendCommand(ON)
+	logInfo('wifi', "Switching Guest Wifi to: " + receivedCommand.toString)
+    
+end
+
+
+/**
+    Regulary check the router for the actual guest wifi status and update OH if different
+    Allows changes to be made outside of OpenHAB and be reflected correctly
+    and for the system to self heal if/when a request to switch fails transiently
+ */
+rule "Set actual wifi status into OH switch"
+when
+	Time cron "0/30 * * * * ?"
+then
+	// only do the check if we're not in the middle of a switch request
+    if(WifiGuestSwitchRunning.state == OFF) {
+        // get the value of the Exec Item that has been defined. It's JSON, so parse it
+        var String wifiStatus = WifiGuestStatus.state.toString
+        var String wifiStatusActual2G = transform("JSONPATH", "$.2g", wifiStatus )
+        var String wifiStatusActual5G = transform("JSONPATH", "$.5g", wifiStatus )
+
+        // if it's different than OH, update OH
+        if(wifiStatusActual2G == 'true' && WifiGuestSwitch.state == OFF) {
+            logInfo('wifi', 'Updating Wifi 2G status to actual: ON')
+            WifiGuestSwitch.postUpdate(ON)
+        } else if (wifiStatusActual2G == 'false' && WifiGuestSwitch.state == ON) {
+            logInfo('wifi', 'Updating Wifi 2G status to actual: OFF')
+            WifiGuestSwitch.postUpdate(OFF)
+        }
+
+        // if you need 5G, update similar here
+        if(wifiStatusActual5G == 'true') {
+            // yourItemName.postUpdate(ON)
+        } else {
+            // yourItemName.postUpdate(OFF)
+        }
+    } else {
+        logInfo('wifi','WIFI is currently restarting.. skipping status check')
+    }
+end
+
+/**
+    Set a flag when the wifi switch has been triggered
+    This is used elsewhere to make sure we don't try to update the actual wifi
+    value in OH from the router while it's actually being changed. The switch can 
+    take 10-30s, so this waits until it's probably done.
+ */
+rule "Proxy timer for wifi reset quiet period"
+when
+    Item WifiGuestSwitchExec received command
+then
+    WifiGuestSwitchRunning.postUpdate(ON)
+    // wait 30 seconds
+    Thread::sleep(30000)
+    WifiGuestSwitchRunning.postUpdate(OFF)
+end
+
+/**
+    Set some defaults when the system starts
+ */
+rule "Ensure the proxy timer is OFF on start"
+when 
+    System started
+then
+    WifiGuestSwitchRunning.postUpdate(OFF)
+    WifiGuestTimerRunning.sendCommand(OFF)
+    WifiGuestTimer.postUpdate(0)
+end
+
+/** 
+    Enable the guest wifi for a number of minutes
+    - Receives the commands from the user to enable the guest wifi
+    - Sets a new end datetime for the wifi based on this value
+    - Switches on the wifi
+    - does some cleaning up
+ */
+rule "Start Guest Wifi countdown timer"
+when 
+    Item WifiGuestTimer received command
+then
+    // get the timer value from the sitemap click
+    var timerValue = receivedCommand as Number
+    logInfo('wifi', 'Started wifi off timer for ' + timerValue + ' minutes')
+
+    // update the guest wifi end time by the selected value
+    var endDateTime = now.plusMinutes(timerValue.intValue())
+    logInfo('wifi','setting new off timer to: ' + endDateTime)
+    WifiGuestEnabledUntil.sendCommand(endDateTime.toString)
+    // flip the running switch so we know we're in a timer
+    WifiGuestTimerRunning.sendCommand(ON)
+    // actually turn ON the wifi
+    WifiGuestSwitch.sendCommand(ON)
+    // clear the timer selection so no buttons are selected when next shown
+    WifiGuestTimer.postUpdate(0)
+end
+
+/**
+    Turn OFF the guest wifi once the deadline has exceeded
+    Runs every 30 seconds and confirms if the datetime set for the guest wifi
+    is now in the past. If so, turn OFF the wifi and tidy up
+ */
+rule "Check Wifi timer value and turn OFF wifi if exceeded"
+when 
+    Time cron "0/30 * * * * ?"
+then
+    if( WifiGuestTimerRunning.state == ON && WifiGuestEnabledUntil !== null && now.isAfter((WifiGuestEnabledUntil.state as DateTimeType).zonedDateTime.toInstant.toEpochMilli) ) {
+        logInfo('wifi', 'Turning OFF the guest wifi by timer')
+        WifiGuestSwitch.sendCommand(OFF)
+        WifiGuestTimerRunning.sendCommand(OFF)
+    }
+end
+
+
